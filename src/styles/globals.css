@@ -10,3 +10,7 @@
 .remove-arrow {
     -moz-appearance: textfield;
 }
+
+body {
+  overflow-y: hidden;
+}

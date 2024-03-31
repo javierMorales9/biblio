@@ -16,7 +16,9 @@ const scale = 1.2;
 export default function PdfReader() {
   const [responsiveScale, setResponsiveScale] = useState<number>(1);
   const [pdf, setPdf] = useState<any>(null);
-  const [containerHeight, setContainerHeight] = useState<number>(0);
+  const [containerHeight, setContainerHeight] = useState<number>(window.innerHeight);
+  const [pdfWidth, setPdfWidth] = useState<number>(0);
+
   //The map we want to use is pages. But, since it is a weak map we can't check
   //if a key exists in it. So we use pageNumbers to store that data (it is a map
   //because we want fast checks).
@@ -56,14 +58,19 @@ export default function PdfReader() {
     Promise.all(promises).then((pages) => {
       const pageDimensions = new Map();
 
+      let maxWidth = 0;
       for (const page of pages) {
         const w = page.view[2] * scale;
         const h = page.view[3] * scale;
 
         pageDimensions.set(page._pageIndex + 1, [w, h]);
+        if (w > maxWidth) {
+          maxWidth = w;
+        }
       }
 
       setCachedPageDimensions(pageDimensions);
+      setPdfWidth(maxWidth);
     });
   }
 
@@ -133,8 +140,12 @@ export default function PdfReader() {
     <Document
       file="pdfs/test.pdf"
       onLoadSuccess={onDocumentLoadSuccess}
+      className="w-full flex justify-center"
     >
-      <div className="max-h-screen overflow-y-scroll">
+      <div
+        className=""
+        style={{ width: pdfWidth }}
+      >
         <div className="sticky top-0 z-[10000000] w-full flex justify-center p-4 bg-white border border-gray-400 mb-2">
           <p className="">
             <input
@@ -147,6 +158,7 @@ export default function PdfReader() {
           </p>
         </div>
         <VariableSizeList
+          className=''
           ref={list}
           height={containerHeight}
           itemCount={pdf?.numPages || 0}
@@ -181,7 +193,7 @@ function PageRenderer({ index, style, data }: {
   width: number,
 }) {
   return (
-    <div style={style}>
+    <div style={{ ...style }}>
       <div
         ref={(ref) => {
           if (!ref) return;
@@ -195,7 +207,7 @@ function PageRenderer({ index, style, data }: {
       >
         <Page
           pageNumber={index + 1}
-          //scale={data.scale}
+          scale={data.scale}
           onLoadError={(error) => console.error(error)}
           onLoadSuccess={(page) => {
             if (page.pageNumber === data.numPages) {
